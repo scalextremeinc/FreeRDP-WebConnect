@@ -36,6 +36,7 @@ namespace wsgate {
             
             static void *cbServerThreadFunc(void *ctx);
             static void cbPeerAccepted(freerdp_listener *listener, freerdp_peer *client);
+            static boolean cbPeerPostConnect(freerdp_peer *client);
             
             void ServerThreadFunc();
             void PeerAccepted(freerdp_peer *client);

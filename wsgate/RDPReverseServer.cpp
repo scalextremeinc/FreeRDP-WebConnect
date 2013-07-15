@@ -33,96 +33,7 @@ namespace wsgate {
     }
     
     // private:
-    
-    void RDPReverseServer::cbPeerAccepted(freerdp_listener *listener, freerdp_peer *client) {
-        RDPReverseServer *self = reinterpret_cast<RDPReverseServer *>(listener->param1);
-        self->PeerAccepted(client);
-    }
-    
-    void RDPReverseServer::PeerAccepted(freerdp_peer *client) {
-        int fds;
-        int max_fds;
-        int rcount;
-        void* rfds[32];
-        fd_set rfds_set;
-        rdpSettings* settings;
 
-        memset(rfds, 0, sizeof(rfds));
-        
-        log::info << "We've got a client " << client->hostname << endl;
-
-        freerdp_peer_context_new(client);
-        
-        settings = client->settings;        
-        settings->cert_file = strdup(m_cert_file.c_str());
-        settings->privatekey_file = strdup(m_key_file.c_str());
-        
-        // ?
-        settings->rdp_key_file = strdup(m_key_file.c_str());
-        
-        settings->nla_security = false;
-        settings->rfx_codec = true;
-
-        client->Initialize(client);
-        
-        log::info << "Peer accepted" << endl;
-        
-        while (1)
-        {
-            rcount = 0;
-
-            if (client->GetFileDescriptor(client, rfds, &rcount) != true)
-            {
-                log::err << "Failed to get FreeRDP file descriptor" << endl;
-                break;
-            }
-
-            max_fds = 0;
-            FD_ZERO(&rfds_set);
-
-            for (int i = 0; i < rcount; i++)
-            {
-                fds = (int)(long)(rfds[i]);
-
-                if (fds > max_fds)
-                    max_fds = fds;
-
-                FD_SET(fds, &rfds_set);
-            }
-
-            if (max_fds == 0)
-                break;
-
-            if (select(max_fds + 1, &rfds_set, NULL, NULL, NULL) == -1)
-            {
-                /* these are not really errors */
-                if (!((errno == EAGAIN) ||
-                    (errno == EWOULDBLOCK) ||
-                    (errno == EINPROGRESS) ||
-                    (errno == EINTR))) /* signal occurred */
-                {
-                    log::debug << "select failed" << endl;
-                    break;
-                }
-            }
-
-            if (client->CheckFileDescriptor(client) != true)
-            {
-                log::err << "Failed to check freerdp file descriptor" << endl;
-                break;
-            }
-            
-            //log::info << "Client connection state: " << client->context->rdp->state << endl;
-        }
-
-        log::info << "Client disconnected:" << client->hostname << endl;
-
-        client->Disconnect(client);
-
-        freerdp_peer_context_free(client);
-        freerdp_peer_free(client);
-    }
-    
     void *RDPReverseServer::cbServerThreadFunc(void *ctx) {
         RDPReverseServer *self = reinterpret_cast<RDPReverseServer *>(ctx);
         if (self) {
@@ -189,5 +100,104 @@ namespace wsgate {
 
         m_listener->Close(m_listener);
     }
+    
+    void RDPReverseServer::cbPeerAccepted(freerdp_listener *listener, freerdp_peer *client) {
+        RDPReverseServer *self = reinterpret_cast<RDPReverseServer *>(listener->param1);
+        self->PeerAccepted(client);
+    }
+    
+    void RDPReverseServer::PeerAccepted(freerdp_peer *client) {
+        int fds;
+        int max_fds;
+        int rcount;
+        void* rfds[32];
+        fd_set rfds_set;
+        rdpSettings* settings;
+
+        memset(rfds, 0, sizeof(rfds));
+        
+        log::info << "Peer connecting: " << client->hostname << endl;
+
+        freerdp_peer_context_new(client);
+        
+        settings = client->settings;        
+        settings->cert_file = strdup(m_cert_file.c_str());
+        settings->privatekey_file = strdup(m_key_file.c_str());
+        settings->rdp_key_file = strdup(m_key_file.c_str());
+        
+        settings->nla_security = false;
+        settings->rfx_codec = true;
+
+        client->PostConnect = cbPeerPostConnect;
+        
+        client->Initialize(client);
+                
+        while (1)
+        {
+            rcount = 0;
+
+            if (client->GetFileDescriptor(client, rfds, &rcount) != true)
+            {
+                log::err << "Failed to get FreeRDP file descriptor" << endl;
+                break;
+            }
+
+            max_fds = 0;
+            FD_ZERO(&rfds_set);
+
+            for (int i = 0; i < rcount; i++)
+            {
+                fds = (int)(long)(rfds[i]);
+
+                if (fds > max_fds)
+                    max_fds = fds;
+
+                FD_SET(fds, &rfds_set);
+            }
+
+            if (max_fds == 0)
+                break;
+
+            if (select(max_fds + 1, &rfds_set, NULL, NULL, NULL) == -1)
+            {
+                /* these are not really errors */
+                if (!((errno == EAGAIN) ||
+                    (errno == EWOULDBLOCK) ||
+                    (errno == EINPROGRESS) ||
+                    (errno == EINTR))) /* signal occurred */
+                {
+                    log::debug << "select failed" << endl;
+                    break;
+                }
+            }
+
+            if (client->CheckFileDescriptor(client) != true)
+            {
+                log::err << "Failed to check freerdp file descriptor" << endl;
+                break;
+            }
+            
+            //log::info << "Client connection state: " << client->context->rdp->state << endl;
+        }
+
+        log::info << "Peer disconnected: " << client->hostname << endl;
+
+        client->Disconnect(client);
+
+        freerdp_peer_context_free(client);
+        freerdp_peer_free(client);
+    }
+    
+    boolean RDPReverseServer::cbPeerPostConnect(freerdp_peer* client) {
+        //RDPReverseServer *self = reinterpret_cast<RDPReverseServer *>(listener->param1);
+        //self->PeerAccepted(client);
+        log::info << "Peer connected: " << client->hostname << endl;
+        // Return false here would stop the execution of the peer mainloop
+        return true;
+    }
+    
+    //RDPReverseServer::peerPostConnect(freerdp_peer* client) {
+    //    log::info << "Peer connection ready" << endl;
+    //}
 
 }
