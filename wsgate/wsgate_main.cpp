@@ -79,6 +79,7 @@
 #include "wsendpoint.hpp"
 #include "wsgate.hpp"
 #include "myrawsocket.hpp"
+#include "RDPReverseServer.hpp"
 
 #ifdef _WIN32
 # define WIN32_LEAN_AND_MEAN
@@ -760,6 +761,8 @@ namespace wsgate {
                     ("rdpoverride.nonla", po::value<string>(), "Predefined RDP flag: Disable NLA")
                     ("rdpoverride.forcentlm", po::value<int>(), "Predefined RDP flag: Force NTLM")
                     ("rdpoverride.size", po::value<string>(), "Predefined RDP desktop size")
+                    ("reverse.cert", po::value<string>(), "Reverse server certificate")
+                    ("reverse.key", po::value<string>(), "Reverse server private key")
                     ;
 
                 m_pVm = new po::variables_map();
@@ -1465,6 +1468,11 @@ int main (int argc, char **argv)
 #endif
     signal(SIGINT, terminate);
     signal(SIGTERM, terminate);
+    
+    wsgate::RDPReverseServer reverse_srv(
+        (*pvm)["reverse.cert"].as<string>(),
+        (*pvm)["reverse.key"].as<string>());
+    reverse_srv.StartServer();
 
     wsgate::WsGate *psrv = NULL;
     try {

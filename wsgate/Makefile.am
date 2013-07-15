@@ -22,7 +22,8 @@ wsgate_SOURCES = \
 	RDP.cpp \
 	Update.cpp \
 	Primary.cpp \
-	Png.cpp
+	Png.cpp \
+	RDPReverseServer.cpp
 
 wsgate_CPPFLAGS = \
 	-DBINDHELPER_PATH=\"$(pkglibexecdir)/bindhelper$(EXEEXT)\" \
@@ -49,7 +50,8 @@ noinst_HEADERS = \
 	Update.hpp \
 	Primary.hpp \
 	NTService.hpp \
-	Png.hpp
+	Png.hpp \
+	RDPReverseServer.hpp
 
 sysconf_DATA = wsgate.ini wsgate.ini.sample
 
