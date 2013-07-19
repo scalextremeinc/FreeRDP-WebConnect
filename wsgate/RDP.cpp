@@ -125,10 +125,9 @@ namespace wsgate {
         this->Connect(host, user, domain, pass, params);
         
         transport_attach(rdp->transport, peerfd);
+        //freerdp_attach(m_freerdp);
         
-        freerdp_attach(m_freerdp);
-        
-        m_State = STATE_CONNECTED;
+        m_State = STATE_CONNECT;
     }
 
     bool RDP::Connect(string host, string user, string domain, string pass,
@@ -722,7 +721,8 @@ namespace wsgate {
                     CheckFileDescriptor();
                     break;
                 case STATE_CONNECT:
-                    if (freerdp_connect(m_freerdp)) {
+                    if (freerdp_attach(m_freerdp)) {
+                    //if (freerdp_connect(m_freerdp)) {
                         m_State = STATE_CONNECTED;
                         continue;
                     }
