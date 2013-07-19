@@ -162,6 +162,8 @@ namespace wsgate {
             // Non-copyable
             WsGate(const wsgate::WsGate&);
             WsGate & operator=(const wsgate::WsGate&);
+            
+            RDPReverseServer* m_reverse_server;
 
         public:
 
@@ -207,6 +209,10 @@ namespace wsgate {
                 }
                 delete m_pVm;
                 m_pVm = NULL;
+            }
+            
+            void SetReverseServer(RDPReverseServer* reverse_server) {
+                m_reverse_server = reverse_server;
             }
 
             HttpResponse *HandleThreadException(ehs_threadid_t, HttpRequest *request, exception &ex)
@@ -431,7 +437,8 @@ namespace wsgate {
                     }
                     response->EnableIdleTimeout(false);
                     response->EnableKeepAlive(true);
-                    if (!sh->Prepare(request->Connection(), rdphost, rdpuser, rdppass, params)) {
+                    if (!sh->Prepare(request->Connection(), rdphost, rdpuser, rdppass,
+                            params, m_reverse_server->GetPeer())) {
                         log::warn << "Request from " << request->RemoteAddress()
                             << ": " << uri << " => 503 (RDP backend not available)" << endl;
                         response->EnableIdleTimeout(true);
@@ -1228,7 +1235,7 @@ namespace wsgate {
     }
 
     bool MyRawSocketHandler::Prepare(EHSConnection *conn, const string host,
-            const string user, const string pass, const WsRdpParams &params)
+            const string user, const string pass, const WsRdpParams &params, int peerfd)
     {
         log::debug << "RDP Host:               '" << host << "'" << endl;
         log::debug << "RDP Port:               '" << params.port << "'" << endl;
@@ -1248,7 +1255,8 @@ namespace wsgate {
         conn_ptr c(new wspp::wsendpoint(h.get()));
         rdp_ptr r(new RDP(h.get()));
         m_cmap[conn] = conn_tuple(c, h, r);
-        r->Connect(host, user, string() /*domain*/, pass, params);
+        //r->Connect(host, user, string() /*domain*/, pass, params);
+        r->SetConnection(peerfd, host, user, string() /*domain*/, pass, params);
         m_parent->RegisterRdpSession(r);
         return true;
     }
@@ -1473,16 +1481,19 @@ int main (int argc, char **argv)
         (*pvm)["reverse.cert"].as<string>(),
         (*pvm)["reverse.key"].as<string>());
     reverse_srv.StartServer();
+    srv.SetReverseServer(&reverse_srv);
 
     wsgate::WsGate *psrv = NULL;
     try {
         wsgate::log::info << "wsgate v" << VERSION << "." << GITREV << " starting" << endl;
+        
         srv.StartServer(oSP);
         wsgate::log::info << "Listening on " << oSP["bindaddress"].GetCharString() << ":" << oSP["port"].GetInt() << endl;
 
         if (need2) {
             // Add second instance on insecure port
             psrv = new wsgate::WsGate();
+            psrv->SetReverseServer(&reverse_srv);
 #ifndef _WIN32
             psrv->SetBindHelper(&h);
 #endif

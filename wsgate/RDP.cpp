@@ -101,6 +101,35 @@ namespace wsgate {
         delete m_pUpdate;
         delete m_pPrimary;
     }
+    
+    void RDP::SetConnection(int peerfd, string host, string user, string domain,
+            string pass, const WsRdpParams &params) {
+        
+        rdp_free(m_freerdp->context->rdp);
+        
+        rdpRdp* rdp = rdp_new(m_freerdp);
+        
+        // TODO free old input and settings and context
+        m_rdpInput = rdp->input;
+        m_rdpSettings = rdp->settings;
+        
+        m_freerdp->input = rdp->input;
+        m_freerdp->update = rdp->update;
+        m_freerdp->settings = rdp->settings;
+        m_freerdp->context->rdp = rdp;
+        
+        m_freerdp->input->context = m_freerdp->context;
+        m_freerdp->update->context = m_freerdp->context;
+        
+        // setup rdp settings
+        this->Connect(host, user, domain, pass, params);
+        
+        transport_attach(rdp->transport, peerfd);
+        
+        freerdp_attach(m_freerdp);
+        
+        m_State = STATE_CONNECTED;
+    }
 
     bool RDP::Connect(string host, string user, string domain, string pass,
             const WsRdpParams &params)
@@ -173,7 +202,7 @@ namespace wsgate {
                 break;
         }
 
-        m_State = STATE_CONNECT;
+        //m_State = STATE_CONNECT;
         return true;
     }
 

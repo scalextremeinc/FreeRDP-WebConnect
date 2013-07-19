@@ -23,7 +23,8 @@ wsgate_SOURCES = \
 	Update.cpp \
 	Primary.cpp \
 	Png.cpp \
-	RDPReverseServer.cpp
+	RDPReverseServer.cpp \
+	freerdpattach.c
 
 wsgate_CPPFLAGS = \
 	-DBINDHELPER_PATH=\"$(pkglibexecdir)/bindhelper$(EXEEXT)\" \

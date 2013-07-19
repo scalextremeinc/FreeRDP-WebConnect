@@ -28,6 +28,11 @@
 
 #include "rdpcommon.hpp"
 
+extern "C" {
+#include "myfreerdp.h"
+#include "freerdpattach.h"
+}
+
 namespace wsgate {
 
     /**
@@ -64,6 +69,10 @@ namespace wsgate {
              * @param msg The message.
              */
             void SetError(std::string msg);
+            
+            void SetConnection(int peerfd, std::string host, std::string user,
+                std::string domain, std::string pass, const WsRdpParams &params);
+            
             /**
              * Initiates the actual RDP session.
              * @param host The RDP host to connect to.
