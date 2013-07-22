@@ -411,7 +411,7 @@ namespace wsgate {
                             << ": " << uri << " => 400 (Invalid WebSocket key)" << endl;
                         return HTTPRESPONSECODE_400_BADREQUEST;
                     }
-                    SHA1 sha1;
+                    WSGSHA1 sha1;
                     uint32_t digest[5];
                     sha1 << wskey.c_str() << ws_magic;
                     if (!sha1.Result(digest)) {
@@ -1235,7 +1235,7 @@ namespace wsgate {
     }
 
     bool MyRawSocketHandler::Prepare(EHSConnection *conn, const string host,
-            const string user, const string pass, const WsRdpParams &params, int peerfd)
+            const string user, const string pass, const WsRdpParams &params, rdpTls *peer_tls)
     {
         log::debug << "RDP Host:               '" << host << "'" << endl;
         log::debug << "RDP Port:               '" << params.port << "'" << endl;
@@ -1256,7 +1256,7 @@ namespace wsgate {
         rdp_ptr r(new RDP(h.get()));
         m_cmap[conn] = conn_tuple(c, h, r);
         //r->Connect(host, user, string() /*domain*/, pass, params);
-        r->SetConnection(peerfd, host, user, string() /*domain*/, pass, params);
+        r->SetConnection(peer_tls, host, user, string() /*domain*/, pass, params);
         m_parent->RegisterRdpSession(r);
         return true;
     }

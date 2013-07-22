@@ -55,7 +55,7 @@
  *  Comments:
  *
  */
-SHA1::SHA1()
+WSGSHA1::WSGSHA1()
     : Length_Low(0)
     , Length_High(0)
     , Message_Block()
@@ -81,7 +81,7 @@ SHA1::SHA1()
  *  Comments:
  *
  */
-SHA1::~SHA1()
+WSGSHA1::~WSGSHA1()
 {
     // The destructor does nothing
 }
@@ -102,7 +102,7 @@ SHA1::~SHA1()
  *  Comments:
  *
  */
-void SHA1::Reset()
+void WSGSHA1::Reset()
 {
     Length_Low          = 0;
     Length_High         = 0;
@@ -136,7 +136,7 @@ void SHA1::Reset()
  *  Comments:
  *
  */
-bool SHA1::Result(unsigned *message_digest_array)
+bool WSGSHA1::Result(unsigned *message_digest_array)
 {
     int i;                                  // Counter
 
@@ -177,7 +177,7 @@ bool SHA1::Result(unsigned *message_digest_array)
  *  Comments:
  *
  */
-void SHA1::Input(   const unsigned char *message_array,
+void WSGSHA1::Input(   const unsigned char *message_array,
                     unsigned            length)
 {
     if (!length)
@@ -236,7 +236,7 @@ void SHA1::Input(   const unsigned char *message_array,
  *  Comments:
  *
  */
-void SHA1::Input(   const char  *message_array,
+void WSGSHA1::Input(   const char  *message_array,
                     unsigned    length)
 {
     Input((unsigned char *) message_array, length);
@@ -258,7 +258,7 @@ void SHA1::Input(   const char  *message_array,
  *  Comments:
  *
  */
-void SHA1::Input(unsigned char message_element)
+void WSGSHA1::Input(unsigned char message_element)
 {
     Input(&message_element, 1);
 }
@@ -279,7 +279,7 @@ void SHA1::Input(unsigned char message_element)
  *  Comments:
  *
  */
-void SHA1::Input(char message_element)
+void WSGSHA1::Input(char message_element)
 {
     Input((unsigned char *) &message_element, 1);
 }
@@ -302,7 +302,7 @@ void SHA1::Input(char message_element)
  *      Each character is assumed to hold 8 bits of information.
  *
  */
-SHA1& SHA1::operator<<(const char *message_array)
+WSGSHA1& WSGSHA1::operator<<(const char *message_array)
 {
     const char *p = message_array;
 
@@ -333,7 +333,7 @@ SHA1& SHA1::operator<<(const char *message_array)
  *      Each character is assumed to hold 8 bits of information.
  *
  */
-SHA1& SHA1::operator<<(const unsigned char *message_array)
+WSGSHA1& WSGSHA1::operator<<(const unsigned char *message_array)
 {
     const unsigned char *p = message_array;
 
@@ -363,7 +363,7 @@ SHA1& SHA1::operator<<(const unsigned char *message_array)
  *      The character is assumed to hold 8 bits of information.
  *
  */
-SHA1& SHA1::operator<<(const char message_element)
+WSGSHA1& WSGSHA1::operator<<(const char message_element)
 {
     Input((unsigned char *) &message_element, 1);
 
@@ -387,7 +387,7 @@ SHA1& SHA1::operator<<(const char message_element)
  *      The character is assumed to hold 8 bits of information.
  *
  */
-SHA1& SHA1::operator<<(const unsigned char message_element)
+WSGSHA1& WSGSHA1::operator<<(const unsigned char message_element)
 {
     Input(&message_element, 1);
 
@@ -413,7 +413,7 @@ SHA1& SHA1::operator<<(const unsigned char message_element)
  *      in the publication.
  *
  */
-void SHA1::ProcessMessageBlock()
+void WSGSHA1::ProcessMessageBlock()
 {
     const unsigned K[] =    {               // Constants defined for SHA-1
                                 0x5A827999,
@@ -523,7 +523,7 @@ void SHA1::ProcessMessageBlock()
  *  Comments:
  *
  */
-void SHA1::PadMessage()
+void WSGSHA1::PadMessage()
 {
     /*
      *  Check to see if the current message block is too small to hold
@@ -589,7 +589,7 @@ void SHA1::PadMessage()
  *  Comments:
  *
  */
-unsigned SHA1::CircularShift(int bits, unsigned word)
+unsigned WSGSHA1::CircularShift(int bits, unsigned word)
 {
     return ((word << bits) & 0xFFFFFFFF) | ((word & 0xFFFFFFFF) >> (32-bits));
 }

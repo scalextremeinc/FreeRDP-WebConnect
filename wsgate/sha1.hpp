@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _SHA1_H_
-#define _SHA1_H_
+#ifndef _WSGSHA1_H_
+#define _WSGSHA1_H_
 
 /**
  *      This class implements the Secure Hashing Standard as defined
@@ -51,13 +51,13 @@
  *      only works with messages with a length that is a multiple of 8
  *      bits.
  */
-class SHA1
+class WSGSHA1
 {
 
     public:
 
-        SHA1();
-        virtual ~SHA1();
+        WSGSHA1();
+        virtual ~WSGSHA1();
 
         /**
          * Initializes the class member variables
@@ -102,25 +102,25 @@ class SHA1
          * @param message_array A string.
          * @return A reference to this instance.
          */
-        SHA1& operator<<(const char *message_array);
+        WSGSHA1& operator<<(const char *message_array);
         /**
          * Convenience operator for appending string data to the the message.
          * @param message_array A string.
          * @return A reference to this instance.
          */
-        SHA1& operator<<(const unsigned char *message_array);
+        WSGSHA1& operator<<(const unsigned char *message_array);
         /**
          * Convenience operator for appending character data to the the message.
          * @param message_element A character.
          * @return A reference to this instance.
          */
-        SHA1& operator<<(const char message_element);
+        WSGSHA1& operator<<(const char message_element);
         /**
          * Convenience operator for appending octet data to the the message.
          * @param message_element An octet.
          * @return A reference to this instance.
          */
-        SHA1& operator<<(const unsigned char message_element);
+        WSGSHA1& operator<<(const unsigned char message_element);
 
     private:
 

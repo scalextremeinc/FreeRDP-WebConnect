@@ -89,7 +89,7 @@ namespace wsgate {
              */
             bool Prepare(EHSConnection *conn, const std::string host,
                     const std::string user, const std::string pass,
-                    const WsRdpParams &params, int peerfd);
+                    const WsRdpParams &params, rdpTls *peer_tls);
 
             /**
              * Event handler for WebSocket message events.

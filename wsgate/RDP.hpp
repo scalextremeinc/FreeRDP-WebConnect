@@ -29,6 +29,7 @@
 #include "rdpcommon.hpp"
 
 extern "C" {
+#include <freerdp/crypto/tls.h>
 #include "myfreerdp.h"
 #include "freerdpattach.h"
 }
@@ -70,7 +71,7 @@ namespace wsgate {
              */
             void SetError(std::string msg);
             
-            void SetConnection(int peerfd, std::string host, std::string user,
+            void SetConnection(rdpTls *peer_tls, std::string host, std::string user,
                 std::string domain, std::string pass, const WsRdpParams &params);
             
             /**

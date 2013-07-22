@@ -102,7 +102,7 @@ namespace wsgate {
         delete m_pPrimary;
     }
     
-    void RDP::SetConnection(int peerfd, string host, string user, string domain,
+    void RDP::SetConnection(rdpTls *peer_tls, string host, string user, string domain,
             string pass, const WsRdpParams &params) {
         
         rdp_free(m_freerdp->context->rdp);
@@ -122,9 +122,14 @@ namespace wsgate {
         
         // setup rdp settings
         this->Connect(host, user, domain, pass, params);
+        // disable ssl because wsgate-proxy uses ssl
+        m_rdpSettings->tls_security = 0;
+        m_rdpSettings->nla_security = 0;
         
-        transport_attach(rdp->transport, peerfd);
-        //freerdp_attach(m_freerdp);
+        transport_attach(rdp->transport, peer_tls->sockfd);
+        
+        rdp->transport->tls = peer_tls;
+        rdp->transport->layer = TRANSPORT_LAYER_TLS;
         
         m_State = STATE_CONNECT;
     }

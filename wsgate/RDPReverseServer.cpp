@@ -1,6 +1,5 @@
 #include "RDPReverseServer.hpp"
 
-
 namespace wsgate {
 
     using namespace std;
@@ -63,6 +62,34 @@ namespace wsgate {
         sockaddr_storage new_addr;
         socklen_t addr_size = sizeof new_addr;
         int new_fd = -1;
+        SSL_CTX* ctx;
+        SSL* ssl;
+        int ssl_status;
+        
+        SSL_library_init();
+        SSL_load_error_strings();
+        
+        ctx = SSL_CTX_new(TLSv1_server_method());
+        if (!SSL_CTX_load_verify_locations(ctx, NULL, "/mnt/workspace/scalextreme/rdp/ca.pem")) {
+            log::err << "Could not load server trusted CA" << endl;
+            return;
+        }
+        
+        if (SSL_CTX_use_certificate_file(ctx, m_cert_file.c_str(), SSL_FILETYPE_PEM) <= 0) {
+            log::err << "Could not load server cert" << endl;
+            return;
+        }
+        
+        /* Load the server private-key into the SSL context */
+        if (SSL_CTX_use_PrivateKey_file(ctx, m_key_file.c_str(), SSL_FILETYPE_PEM) <= 0) {
+            log::err << "Could not load server private key" << endl;
+            return;
+        }
+        
+        // Set to require peer (client) certificate verification
+        //SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, verify_callback);
+        // Set the verification depth to 1
+        //SSL_CTX_set_verify_depth(ctx,1)
         
         while(1) {
             new_fd = accept(m_sockfd, (struct sockaddr*) &new_addr, &addr_size);
@@ -79,6 +106,51 @@ namespace wsgate {
             
             // TODO
             m_peerfd = new_fd;
+            
+            ssl = SSL_new(ctx);
+            SSL_set_fd(ssl, new_fd);
+            ssl_status = SSL_accept(ssl);
+            if (ssl_status <= 0) {
+                this->SSLPrintError("SSL_connect", ssl, ssl_status);
+            } else {
+                log::info << "SSL connection established " << new_host << ":" << new_port << endl;    
+            }
+            
+            m_peer_tls = (rdpTls*) malloc(sizeof(rdpTls));
+            m_peer_tls->ssl = ssl;
+            m_peer_tls->sockfd = new_fd;
+            m_peer_tls->ctx = ctx;
+            
+        }
+    }
+    
+    bool RDPReverseServer::SSLPrintError(char* func, SSL* connection, int value)
+    {
+        switch (SSL_get_error(connection, value))
+        {
+            case SSL_ERROR_ZERO_RETURN:
+                log::err << func <<": Server closed TLS connection\n" << endl;
+                return true;
+
+            case SSL_ERROR_WANT_READ:
+                log::info << "SSL_ERROR_WANT_READ\n" << endl;
+                return false;
+
+            case SSL_ERROR_WANT_WRITE:
+                log::info << "SSL_ERROR_WANT_WRITE\n" << endl;
+                return false;
+
+            case SSL_ERROR_SYSCALL:
+                log::err << func << ": I/O error\n" << endl;
+                return true;
+
+            case SSL_ERROR_SSL:
+                log::err << func << ": Failure in SSL library (protocol error?)\n" << endl;
+                return true;
+
+            default:
+                log::err << func << ": Unknown error\n" << endl;
+                return true;
         }
     }
     
@@ -91,8 +163,8 @@ namespace wsgate {
 
     }
     
-    int RDPReverseServer::GetPeer() {
-        return m_peerfd;
+    rdpTls *RDPReverseServer::GetPeer() {
+        return m_peer_tls;
     }
 
 }

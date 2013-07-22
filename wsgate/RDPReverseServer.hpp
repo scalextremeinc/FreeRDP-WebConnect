@@ -6,10 +6,15 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 extern "C" {
 #include <freerdp/listener.h>
 #include <freerdp/peer.h>
+#include <freerdp/crypto/tls.h>
 }
+
 #include <freerdp/freerdp.h>
 
 #include "wsgate.hpp"
@@ -36,6 +41,7 @@ namespace wsgate {
             struct sockaddr_in m_server_addr;
             // TODO
             int m_peerfd;
+            rdpTls *m_peer_tls;
         
         public:
         
@@ -45,7 +51,7 @@ namespace wsgate {
             
             void StartServer();
             
-            int GetPeer();
+            rdpTls *GetPeer();
         
         private:
             
@@ -54,6 +60,8 @@ namespace wsgate {
             
             void ServerThreadFunc();
             void PeerAccepted(freerdp_peer *client);
+            
+            bool SSLPrintError(char* func, SSL* connection, int value);
     };
 }
 
