@@ -127,5 +127,9 @@ rdpRdp* rdp_new(freerdp* instance);
 void rdp_free(rdpRdp* rdp);
 
 void transport_attach(rdpTransport* transport, int sockfd);
+
+void input_free(rdpInput* input);
+
+void update_free(rdpUpdate* update);
  
 #endif

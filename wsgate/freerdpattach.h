@@ -8,4 +8,6 @@ int freerdp_attach(freerdp* instance);
 
 int rdp_attach_client_connect(rdpRdp* rdp);
 
+int freerdp_detach(freerdp* instance);
+
 #endif

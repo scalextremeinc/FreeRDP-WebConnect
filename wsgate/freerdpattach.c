@@ -136,3 +136,12 @@ int rdp_attach_client_connect(rdpRdp* rdp)
 
 	return true;
 }
+
+int freerdp_detach(freerdp* instance) {
+    rdpTransport *transport = instance->context->rdp->transport;
+    
+    if (transport->layer == TRANSPORT_LAYER_TLS)
+        tls_disconnect(transport->tls);
+    
+    return 1;
+}

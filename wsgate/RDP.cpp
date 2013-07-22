@@ -109,7 +109,6 @@ namespace wsgate {
         
         rdpRdp* rdp = rdp_new(m_freerdp);
         
-        // TODO free old input and settings and context
         m_rdpInput = rdp->input;
         m_rdpSettings = rdp->settings;
         
@@ -212,6 +211,7 @@ namespace wsgate {
             if (STATE_CONNECTED == m_State) {
                 m_State = STATE_CLOSED;
                 return (freerdp_disconnect(m_freerdp) != 0);
+                //return (freerdp_detach(m_freerdp) != 0);
             }
             pthread_join(m_worker, NULL);
         }
