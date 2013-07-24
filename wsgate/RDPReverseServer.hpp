@@ -45,24 +45,16 @@ namespace wsgate {
             rdpTls *m_peer_tls;
         
         public:
-        
             RDPReverseServer(std::string cert_file, std::string key_file, std::string ca_file);
-            
             virtual ~RDPReverseServer();
-            
             void StartServer();
-            
             rdpTls *GetPeer();
         
-        private:
-            
+        private:            
             static void *cbServerThreadFunc(void *ctx);
-            static void cbPeerAccepted(freerdp_listener *listener, freerdp_peer *client);
-            
+            static bool PrintSSLError(char* func, SSL* connection, int value);
             void ServerThreadFunc();
-            void PeerAccepted(freerdp_peer *client);
             
-            bool SSLPrintError(char* func, SSL* connection, int value);
     };
 }
 

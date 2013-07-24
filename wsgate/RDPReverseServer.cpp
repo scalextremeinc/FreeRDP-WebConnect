@@ -49,7 +49,10 @@ namespace wsgate {
         }
     }
     
-
+    rdpTls *RDPReverseServer::GetPeer() {
+        return m_peer_tls;
+    }
+    
     // private:
 
     void *RDPReverseServer::cbServerThreadFunc(void *ctx) {
@@ -108,18 +111,18 @@ namespace wsgate {
             sprintf(new_port, "%u", sa->sin_port);
             log::info << "New connection " << new_host << ":" << new_port << endl;
 
-            
             ssl = SSL_new(ctx);
             SSL_set_fd(ssl, new_fd);
             ssl_status = SSL_accept(ssl);
             if (ssl_status <= 0) {
-                this->SSLPrintError("SSL_connect", ssl, ssl_status);
+                PrintSSLError("SSL_connect", ssl, ssl_status);
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
                 continue;
             }
             
             if ((peer_cert = SSL_get_peer_certificate(ssl)) != NULL) {
                 X509_NAME_get_text_by_NID(X509_get_subject_name(peer_cert), OBJ_txt2nid("CN"), buf, 256);
-                
                 log::info << "Proxy cert CN: " << buf << endl;
                 
                 if (X509_V_OK == SSL_get_verify_result(ssl)) {
@@ -134,14 +137,21 @@ namespace wsgate {
                     log::info << "SSL connection established " << new_host << ":" << new_port << endl;    
                 } else {
                     log::err << "Failed client verification with SSL_get_verify_result" << endl;
+                    SSL_shutdown(ssl);
+                    SSL_free(ssl);
                 }
-            } else
+            } else {
                 log::err << "Peer cert was not presented" << endl;
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+            }
             
         }
+        
+        SSL_CTX_free(ctx);
     }
     
-    bool RDPReverseServer::SSLPrintError(char* func, SSL* connection, int value)
+    bool RDPReverseServer::PrintSSLError(char* func, SSL* connection, int value)
     {
         switch (SSL_get_error(connection, value))
         {
@@ -169,19 +179,6 @@ namespace wsgate {
                 log::err << func << ": Unknown error\n" << endl;
                 return true;
         }
-    }
-    
-    void RDPReverseServer::cbPeerAccepted(freerdp_listener *listener, freerdp_peer *client) {
-        RDPReverseServer *self = reinterpret_cast<RDPReverseServer *>(listener->param1);
-        self->PeerAccepted(client);
-    }
-    
-    void RDPReverseServer::PeerAccepted(freerdp_peer *client) {
-
-    }
-    
-    rdpTls *RDPReverseServer::GetPeer() {
-        return m_peer_tls;
     }
 
 }

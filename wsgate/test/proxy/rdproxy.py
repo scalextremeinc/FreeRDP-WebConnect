@@ -16,7 +16,7 @@ def process_sock(event, sock1, queue1, queue2):
         while True:
             try:
                 buf = sock1.recv(1024)
-                print "* recv, sock: %s, len: %s" % (SOCK_STR[sock1], len(buf))
+                #print "* recv, sock: %s, len: %s" % (SOCK_STR[sock1], len(buf))
                 queue1.append(buf)
             except ssl.SSLError as e:
                 if e.args[0] == ssl.SSL_ERROR_WANT_READ:
@@ -32,7 +32,7 @@ def process_sock(event, sock1, queue1, queue2):
         while len(queue2) > 0:
             try:
                 sock1.send(queue2[0])
-                print "* send, sock: %s, len: %s" % (SOCK_STR[sock1], len(queue2[0]))
+                #print "* send, sock: %s, len: %s" % (SOCK_STR[sock1], len(queue2[0]))
                 queue2.popleft()
             except ssl.SSLError as e:
                 if e.args[0] == ssl.SSL_ERROR_WANT_WRITE:
