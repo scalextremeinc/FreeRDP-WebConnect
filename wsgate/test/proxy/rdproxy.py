@@ -1,3 +1,4 @@
+#!/bin/env python
 import sys
 import ssl
 import socket
@@ -49,9 +50,9 @@ def process_sock(event, sock1, queue1, queue2):
 def rdproxy(host1, port1, host2, port2):
     sock1 = socket.socket()
     sock2 = socket.socket()
-    sock1 = ssl.wrap_socket(sock1, certfile="agent.cert", ca_certs="ca.pem", cert_reqs=ssl.CERT_NONE)
+    sock1 = ssl.wrap_socket(sock1, certfile="agent.cert", ca_certs="ca.pem",
+        cert_reqs=ssl.CERT_NONE, ssl_version=ssl.PROTOCOL_TLSv1)
     sock1.connect((host1, int(port1)))
-    sock1.do_handshake()
     SOCK_STR[sock1] = sock_to_str(sock1)
     print "* Connected %s" % SOCK_STR[sock1]
     sock2.connect((host2, int(port2)))

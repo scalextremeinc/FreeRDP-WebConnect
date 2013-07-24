@@ -770,6 +770,7 @@ namespace wsgate {
                     ("rdpoverride.size", po::value<string>(), "Predefined RDP desktop size")
                     ("reverse.cert", po::value<string>(), "Reverse server certificate")
                     ("reverse.key", po::value<string>(), "Reverse server private key")
+                    ("reverse.ca", po::value<string>(), "Reverse server trusted CA")
                     ;
 
                 m_pVm = new po::variables_map();
@@ -1479,7 +1480,8 @@ int main (int argc, char **argv)
     
     wsgate::RDPReverseServer reverse_srv(
         (*pvm)["reverse.cert"].as<string>(),
-        (*pvm)["reverse.key"].as<string>());
+        (*pvm)["reverse.key"].as<string>(),
+        (*pvm)["reverse.ca"].as<string>());
     reverse_srv.StartServer();
     srv.SetReverseServer(&reverse_srv);
 

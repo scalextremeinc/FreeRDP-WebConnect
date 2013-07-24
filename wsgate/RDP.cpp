@@ -95,6 +95,10 @@ namespace wsgate {
     {
         log::debug << __PRETTY_FUNCTION__ << endl;
         Disconnect();
+        
+        // don't free reverse server ssl context
+        m_freerdp->context->rdp->transport->tls->ctx = NULL;
+        
         freerdp_context_free(m_freerdp);
         freerdp_free(m_freerdp);
         m_instances.erase(m_freerdp);

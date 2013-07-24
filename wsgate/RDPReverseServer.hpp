@@ -36,6 +36,7 @@ namespace wsgate {
         private:
             std::string m_cert_file;
             std::string m_key_file;
+            std::string m_ca_file;
             pthread_t m_worker;
             int m_sockfd;
             struct sockaddr_in m_server_addr;
@@ -45,7 +46,7 @@ namespace wsgate {
         
         public:
         
-            RDPReverseServer(std::string cert_file, std::string key_file);
+            RDPReverseServer(std::string cert_file, std::string key_file, std::string ca_file);
             
             virtual ~RDPReverseServer();
             
