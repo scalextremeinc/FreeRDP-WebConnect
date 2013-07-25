@@ -31,9 +31,12 @@ def process_sock(event, sock1, queue1, queue2):
     if event & select.EPOLLOUT:
         while len(queue2) > 0:
             try:
-                sock1.send(queue2[0])
-                #print "* send, sock: %s, len: %s" % (SOCK_STR[sock1], len(queue2[0]))
-                queue2.popleft()
+                n = sock1.send(queue2[0])
+                #print "* send, sock: %s, len: %s" % (SOCK_STR[sock1], n)
+                if n < len(queue2[0]):
+                    queue2[0] = queue2[0][n:]
+                else:
+                    queue2.popleft()
             except ssl.SSLError as e:
                 if e.args[0] == ssl.SSL_ERROR_WANT_WRITE:
                     break
