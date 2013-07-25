@@ -98,6 +98,12 @@ namespace wsgate {
         
         // don't free reverse server ssl context
         m_freerdp->context->rdp->transport->tls->ctx = NULL;
+        free(m_freerdp->context->rdp->transport->tls);
+        m_freerdp->context->rdp->transport->tls = NULL;
+        rdp_free(m_freerdp->context->rdp);
+        m_freerdp->context->rdp = NULL;
+        
+        rdp_free(m_freerdp->context->rdp);
         
         freerdp_context_free(m_freerdp);
         freerdp_free(m_freerdp);
