@@ -438,7 +438,7 @@ namespace wsgate {
                     response->EnableIdleTimeout(false);
                     response->EnableKeepAlive(true);
                     if (!sh->Prepare(request->Connection(), rdphost, rdpuser, rdppass,
-                            params, m_reverse_server->GetPeer())) {
+                            params, m_reverse_server->GetPeer(rdphost))) {
                         log::warn << "Request from " << request->RemoteAddress()
                             << ": " << uri << " => 503 (RDP backend not available)" << endl;
                         response->EnableIdleTimeout(true);

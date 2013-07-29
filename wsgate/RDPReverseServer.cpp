@@ -1,8 +1,6 @@
 #include "RDPReverseServer.hpp"
 
 namespace wsgate {
-
-    using namespace std;
     
     // public:
     
@@ -22,7 +20,7 @@ namespace wsgate {
     
     void RDPReverseServer::StartServer() {
         if ((m_sockfd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
-            log::err << "Could not create server socket" << endl;
+            log::err << "Could not create server socket" << std::endl;
             return;
         }
         memset(&m_server_addr, 0, sizeof(m_server_addr));
@@ -31,26 +29,33 @@ namespace wsgate {
         m_server_addr.sin_port        = htons(4489);
  
         if (bind(m_sockfd, (struct sockaddr*) &m_server_addr, sizeof(m_server_addr)) == -1) {
-            log::err << "Could not bind server socket" << endl;
+            log::err << "Could not bind server socket" << std::endl;
             return;
         }
  
         if (listen(m_sockfd, SOMAXCONN) == -1) {
-            log::err << "Could not listen on server socket" << endl;
+            log::err << "Could not listen on server socket" << std::endl;
             return;
         }
 
-        log::info << "Reverse server listening on 4489" << endl;
+        log::info << "Reverse server listening on 4489" << std::endl;
         
         if (0 != pthread_create(&m_worker, NULL, cbServerThreadFunc, reinterpret_cast<void *>(this))) {
-            log::err << "Could not create RDP reverse server thread" << endl;
+            log::err << "Could not create RDP reverse server thread" << std::endl;
         } else {
-            log::debug << "Created RDP reverse server thread" << endl;
+            log::debug << "Created RDP reverse server thread" << std::endl;
         }
     }
     
-    rdpTls *RDPReverseServer::GetPeer() {
-        return m_peer_tls;
+    rdpTls *RDPReverseServer::GetPeer(std::string key) {
+        boost::unordered_map<std::string, rdpTls*>::iterator it;
+        
+        m_peers_map_mtx.lock();
+        it = m_peers_map.find(key);
+        m_peers_map.erase(it);
+        m_peers_map_mtx.unlock();
+        
+        return it->second;
     }
     
     // private:
@@ -72,24 +77,25 @@ namespace wsgate {
         int ssl_status;
         X509 *peer_cert;
         char buf[256];
+        rdpTls* peer_tls;
         
         SSL_library_init();
         SSL_load_error_strings();
         
         ctx = SSL_CTX_new(TLSv1_server_method());
         if (!SSL_CTX_load_verify_locations(ctx, m_ca_file.c_str(), NULL)) {
-            log::err << "Could not load server trusted CA" << endl;
+            log::err << "Could not load server trusted CA" << std::endl;
             return;
         }
         
         if (SSL_CTX_use_certificate_file(ctx, m_cert_file.c_str(), SSL_FILETYPE_PEM) <= 0) {
-            log::err << "Could not load server cert" << endl;
+            log::err << "Could not load server cert" << std::endl;
             return;
         }
         
         // Load the server private-key into the SSL context
         if (SSL_CTX_use_PrivateKey_file(ctx, m_key_file.c_str(), SSL_FILETYPE_PEM) <= 0) {
-            log::err << "Could not load server private key" << endl;
+            log::err << "Could not load server private key" << std::endl;
             return;
         }
         
@@ -101,7 +107,7 @@ namespace wsgate {
         while(1) {
             new_fd = accept(m_sockfd, (struct sockaddr*) &new_addr, &addr_size);
             if (new_fd == -1) {
-                log::err << "Failed accepting connection" << endl;
+                log::err << "Failed accepting connection" << std::endl;
                 continue;
             }
             char* new_host = (char*) malloc(INET_ADDRSTRLEN);
@@ -109,7 +115,7 @@ namespace wsgate {
             struct sockaddr_in* sa = (struct sockaddr_in*) &new_addr;
             inet_ntop(AF_INET, &(sa->sin_addr), new_host, INET_ADDRSTRLEN);
             sprintf(new_port, "%u", sa->sin_port);
-            log::info << "New connection " << new_host << ":" << new_port << endl;
+            log::info << "New connection " << new_host << ":" << new_port << std::endl;
 
             ssl = SSL_new(ctx);
             SSL_set_fd(ssl, new_fd);
@@ -123,25 +129,28 @@ namespace wsgate {
             
             if ((peer_cert = SSL_get_peer_certificate(ssl)) != NULL) {
                 X509_NAME_get_text_by_NID(X509_get_subject_name(peer_cert), OBJ_txt2nid("CN"), buf, 256);
-                log::info << "Proxy cert CN: " << buf << endl;
+                log::info << "Proxy cert CN: " << buf << std::endl;
                 
                 if (X509_V_OK == SSL_get_verify_result(ssl)) {
-                    // TODO
-                    m_peerfd = new_fd;
                     
-                    m_peer_tls = (rdpTls*) malloc(sizeof(rdpTls));
-                    m_peer_tls->ssl = ssl;
-                    m_peer_tls->sockfd = new_fd;
-                    m_peer_tls->ctx = ctx;
+                    peer_tls = (rdpTls*) malloc(sizeof(rdpTls));
+                    peer_tls->ssl = ssl;
+                    peer_tls->sockfd = new_fd;
+                    peer_tls->ctx = ctx;
                     
-                    log::info << "SSL connection established " << new_host << ":" << new_port << endl;    
+                    std::string key(buf);
+                    m_peers_map_mtx.lock();
+                    m_peers_map[key] = peer_tls;
+                    m_peers_map_mtx.unlock();
+                    
+                    log::info << "SSL connection established " << new_host << ":" << new_port << std::endl;    
                 } else {
-                    log::err << "Failed client verification with SSL_get_verify_result" << endl;
+                    log::err << "Failed client verification with SSL_get_verify_result" << std::endl;
                     SSL_shutdown(ssl);
                     SSL_free(ssl);
                 }
             } else {
-                log::err << "Peer cert was not presented" << endl;
+                log::err << "Peer cert was not presented" << std::endl;
                 SSL_shutdown(ssl);
                 SSL_free(ssl);
             }
@@ -156,27 +165,27 @@ namespace wsgate {
         switch (SSL_get_error(connection, value))
         {
             case SSL_ERROR_ZERO_RETURN:
-                log::err << func <<": Server closed TLS connection\n" << endl;
+                log::err << func <<": Server closed TLS connection\n" << std::endl;
                 return true;
 
             case SSL_ERROR_WANT_READ:
-                log::info << "SSL_ERROR_WANT_READ\n" << endl;
+                log::info << "SSL_ERROR_WANT_READ\n" << std::endl;
                 return false;
 
             case SSL_ERROR_WANT_WRITE:
-                log::info << "SSL_ERROR_WANT_WRITE\n" << endl;
+                log::info << "SSL_ERROR_WANT_WRITE\n" << std::endl;
                 return false;
 
             case SSL_ERROR_SYSCALL:
-                log::err << func << ": I/O error\n" << endl;
+                log::err << func << ": I/O error\n" << std::endl;
                 return true;
 
             case SSL_ERROR_SSL:
-                log::err << func << ": Failure in SSL library (protocol error?)\n" << endl;
+                log::err << func << ": Failure in SSL library (protocol error?)\n" << std::endl;
                 return true;
 
             default:
-                log::err << func << ": Unknown error\n" << endl;
+                log::err << func << ": Unknown error\n" << std::endl;
                 return true;
         }
     }

@@ -9,6 +9,9 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+#include <boost/unordered_map.hpp>
+#include <mutex>
+
 extern "C" {
 #include <freerdp/listener.h>
 #include <freerdp/peer.h>
@@ -40,15 +43,14 @@ namespace wsgate {
             pthread_t m_worker;
             int m_sockfd;
             struct sockaddr_in m_server_addr;
-            // TODO
-            int m_peerfd;
-            rdpTls *m_peer_tls;
+            std::mutex m_peers_map_mtx;
+            boost::unordered_map<std::string, rdpTls*> m_peers_map;
         
         public:
             RDPReverseServer(std::string cert_file, std::string key_file, std::string ca_file);
             virtual ~RDPReverseServer();
             void StartServer();
-            rdpTls *GetPeer();
+            rdpTls *GetPeer(std::string key);
         
         private:            
             static void *cbServerThreadFunc(void *ctx);

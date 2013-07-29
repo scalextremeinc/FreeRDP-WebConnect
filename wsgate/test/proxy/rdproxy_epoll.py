@@ -15,9 +15,10 @@ def process_sock(event, sock1, queue1, queue2):
     if event & select.EPOLLIN:
         while True:
             try:
-                buf = sock1.recv(1024)
+                buf = sock1.recv(4096)
                 #print "* recv, sock: %s, len: %s" % (SOCK_STR[sock1], len(buf))
-                queue1.append(buf)
+                if len(buf):
+                    queue1.append(buf)
             except ssl.SSLError as e:
                 if e.args[0] == ssl.SSL_ERROR_WANT_READ:
                     break
