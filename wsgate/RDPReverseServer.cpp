@@ -47,7 +47,7 @@ namespace wsgate {
         }
     }
     
-    rdpTls *RDPReverseServer::GetPeer(std::string key) {
+    rdpTls *RDPReverseServer::PopPeer(std::string key) {
         boost::unordered_map<std::string, rdpTls*>::iterator it;
         rdpTls *peer = NULL;
         
@@ -143,6 +143,18 @@ namespace wsgate {
                     peer_tls->ctx = ctx;
                     
                     std::string key(buf);
+                    
+                    // close existing connection for this peer
+                    rdpTls *peer = this->PopPeer(key);
+                    if (NULL != peer) {
+                        log::info << "Closing existing peer connection, key: " << key << std::endl;
+                        SSL_shutdown(peer->ssl);
+                        SSL_free(peer->ssl);
+                        shutdown(peer->sockfd, SHUT_RDWR);
+                        close(peer->sockfd);
+                        free(peer);
+                    }
+                    
                     m_peers_map_mtx.lock();
                     m_peers_map[key] = peer_tls;
                     m_peers_map_mtx.unlock();

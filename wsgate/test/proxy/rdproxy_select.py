@@ -11,12 +11,12 @@ SOCK_STR = {}
 def sock_to_str(sock):
     return "%s:%s" % sock.getpeername()
     
-def process_sock_read(sock1, queue1, queue2):
+def process_sock_read(sock, queue):
     while True:
         try:
-            buf = sock1.recv(1024)
-            #print "* recv, sock: %s, len: %s" % (SOCK_STR[sock1], len(buf))
-            queue1.append(buf)
+            buf = sock.recv(1024)
+            #print "* recv, sock: %s, len: %s" % (SOCK_STR[sock], len(buf))
+            queue.append(buf)
         except ssl.SSLError as e:
             if e.args[0] == ssl.SSL_ERROR_WANT_READ:
                 break
@@ -28,15 +28,15 @@ def process_sock_read(sock1, queue1, queue2):
             else:
                 raise
 
-def process_sock_write(sock1, queue1, queue2):
-    while len(queue2) > 0:
+def process_sock_write(sock, queue):
+    while len(queue) > 0:
         try:
-            n = sock1.send(queue2[0])
+            n = sock.send(queue[0])
             #print "* send, sock: %s, len: %s" % (SOCK_STR[sock1], n)
-            if n < len(queue2[0]):
-                queue2[0] = queue2[0][n:]
+            if n < len(queue[0]):
+                queue[0] = queue[0][n:]
             else:
-                queue2.popleft()
+                queue.popleft()
         except ssl.SSLError as e:
             if e.args[0] == ssl.SSL_ERROR_WANT_WRITE:
                 break
@@ -65,19 +65,16 @@ def rdproxy(host1, port1, host2, port2):
     queue2 = collections.deque()
     lst = (sock1, sock2)
     while True:
-        rlist, wlist, xlist = select.select(lst, lst, lst)
+        rlist, wlist, xlist = select.select(lst, (), lst)
         for s in rlist:
             if s == sock1:
-                process_sock_read(sock1, queue1, queue2)
+                process_sock_read(sock1, queue1)
             elif s == sock2:
-                process_sock_read(sock2, queue2, queue1)
-        for s in wlist:
-            if s == sock1:
-                process_sock_write(sock1, queue1, queue2)
-            elif s == sock2:
-                process_sock_write(sock2, queue2, queue1)
+                process_sock_read(sock2, queue2)
         for s in xlist:
             print "* error, sock: %s" % SOCK_STR[s]
+        process_sock_write(sock2, queue1)
+        process_sock_write(sock1, queue2)
 
 if __name__ == "__main__":
     # python rdproxy.py 127.0.0.1 4489 192.168.56.10 3389

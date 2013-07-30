@@ -99,12 +99,14 @@ namespace wsgate {
         // don't free reverse server ssl context
         m_freerdp->context->rdp->transport->tls->ctx = NULL;
         
+        SSL_free(m_freerdp->context->rdp->transport->tls->ssl);
+        
         free(m_freerdp->context->rdp->transport->tls);
         m_freerdp->context->rdp->transport->tls = NULL;
         rdp_free(m_freerdp->context->rdp);
         m_freerdp->context->rdp = NULL;
         
-        rdp_free(m_freerdp->context->rdp);
+        //rdp_free(m_freerdp->context->rdp);
         
         freerdp_context_free(m_freerdp);
         freerdp_free(m_freerdp);
@@ -635,7 +637,10 @@ namespace wsgate {
                 WSOP_SC_PTR_FREE,
                 p->id
             };
-            m_cursorMap.erase(p->id);
+            CursorMapIter it = m_cursorMap.find(p->id);
+            if (m_cursorMap.end() != it) {
+                m_cursorMap.erase(it);
+            }
             p->id = 0;
             string buf(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
             m_wshandler->send_binary(buf);

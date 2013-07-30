@@ -11,45 +11,43 @@ SOCK_STR = {}
 def sock_to_str(sock):
     return "%s:%s" % sock.getpeername()
 
-def process_sock(event, sock1, queue1, queue2):
-    if event & select.EPOLLIN:
-        while True:
-            try:
-                buf = sock1.recv(4096)
-                #print "* recv, sock: %s, len: %s" % (SOCK_STR[sock1], len(buf))
-                if len(buf):
-                    queue1.append(buf)
-            except ssl.SSLError as e:
-                if e.args[0] == ssl.SSL_ERROR_WANT_READ:
-                    break
-                else:
-                    raise
-            except socket.error as e:
-                if e.args[0] == errno.EWOULDBLOCK: 
-                    break
-                else:
-                    raise
-    if event & select.EPOLLOUT:
-        while len(queue2) > 0:
-            try:
-                n = sock1.send(queue2[0])
-                #print "* send, sock: %s, len: %s" % (SOCK_STR[sock1], n)
-                if n < len(queue2[0]):
-                    queue2[0] = queue2[0][n:]
-                else:
-                    queue2.popleft()
-            except ssl.SSLError as e:
-                if e.args[0] == ssl.SSL_ERROR_WANT_WRITE:
-                    break
-                else:
-                    raise
-            except socket.error, e:
-                if e.args[0] == errno.EWOULDBLOCK: 
-                    break
-                else:
-                    raise e
-    if event & select.EPOLLERR:
-        print "* error, sock: %s" % SOCK_STR[sock1]
+def process_sock_read(sock, queue):
+    while True:
+        try:
+            buf = sock.recv(4096)
+            #print "* recv, sock: %s, len: %s" % (SOCK_STR[sock], len(buf))
+            if len(buf):
+                queue.append(buf)
+        except ssl.SSLError as e:
+            if e.args[0] == ssl.SSL_ERROR_WANT_READ:
+                break
+            else:
+                raise
+        except socket.error as e:
+            if e.args[0] == errno.EWOULDBLOCK: 
+                break
+            else:
+                raise
+
+def process_sock_write(sock, queue):
+    while len(queue) > 0:
+        try:
+            n = sock.send(queue[0])
+            #print "* send, sock: %s, len: %s" % (SOCK_STR[sock], n)
+            if n < len(queue[0]):
+                queue[0] = queue[0][n:]
+            else:
+                queue.popleft()
+        except ssl.SSLError as e:
+            if e.args[0] == ssl.SSL_ERROR_WANT_WRITE:
+                break
+            else:
+                raise
+        except socket.error, e:
+            if e.args[0] == errno.EWOULDBLOCK: 
+                break
+            else:
+                raise e
 
 def rdproxy(host1, port1, host2, port2):
     sock1 = socket.socket()
@@ -67,14 +65,22 @@ def rdproxy(host1, port1, host2, port2):
     queue1 = collections.deque()
     queue2 = collections.deque()
     epoll = select.epoll()
-    epoll.register(sock1.fileno(), select.EPOLLIN | select.EPOLLOUT | select.EPOLLERR)
-    epoll.register(sock2.fileno(), select.EPOLLIN | select.EPOLLOUT | select.EPOLLERR)
+    epoll.register(sock1.fileno(), select.EPOLLIN | select.EPOLLERR | select.EPOLLET)
+    epoll.register(sock2.fileno(), select.EPOLLIN | select.EPOLLERR | select.EPOLLET)
     while True:
-        for fileno, event in epoll.poll():
+        for fileno, event in epoll.poll(timeout=1):
             if fileno == sock1.fileno():
-                process_sock(event, sock1, queue1, queue2)
+                if event & select.EPOLLERR:
+                    print "* error, sock: %s" % SOCK_STR[sock1]
+                if event & select.EPOLLIN:
+                    process_sock_read(sock1, queue1)
             elif fileno == sock2.fileno():
-                process_sock(event, sock2, queue2, queue1)
+                if event & select.EPOLLERR:
+                    print "* error, sock: %s" % SOCK_STR[sock2]
+                if event & select.EPOLLIN:
+                    process_sock_read(sock2, queue2)
+        process_sock_write(sock2, queue1)
+        process_sock_write(sock1, queue2)
 
 if __name__ == "__main__":
     # python rdproxy.py 127.0.0.1 4489 192.168.56.10 3389

@@ -56,6 +56,7 @@ namespace wsgate {
             /// Map for storing cursor images of this session
             typedef boost::tuple<time_t, std::string> cursor;
             typedef std::map<uint32_t, cursor> CursorMap;
+            typedef std::map<uint32_t, cursor>::iterator CursorMapIter;
 
             /**
              * Constructor

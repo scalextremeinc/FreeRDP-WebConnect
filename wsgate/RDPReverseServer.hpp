@@ -50,7 +50,7 @@ namespace wsgate {
             RDPReverseServer(std::string cert_file, std::string key_file, std::string ca_file);
             virtual ~RDPReverseServer();
             void StartServer();
-            rdpTls *GetPeer(std::string key);
+            rdpTls *PopPeer(std::string key);
         
         private:            
             static void *cbServerThreadFunc(void *ctx);
