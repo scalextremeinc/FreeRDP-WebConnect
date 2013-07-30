@@ -1236,7 +1236,7 @@ namespace wsgate {
     }
 
     bool MyRawSocketHandler::Prepare(EHSConnection *conn, const string host,
-            const string user, const string pass, const WsRdpParams &params, rdpTls *peer_tls)
+            const string user, const string pass, const WsRdpParams &params, rdpTls *peer)
     {
         log::debug << "RDP Host:               '" << host << "'" << endl;
         log::debug << "RDP Port:               '" << params.port << "'" << endl;
@@ -1251,13 +1251,16 @@ namespace wsgate {
         log::debug << "RDP Disable TLS:        " << params.notls << endl;
         log::debug << "RDP Disable NLA:        " << params.nonla << endl;
         log::debug << "RDP NTLM auth:          " << params.fntlm << endl;
+        
+        if (NULL == peer)
+            return false;
 
         handler_ptr h(new MyWsHandler(conn, m_parent, this));
         conn_ptr c(new wspp::wsendpoint(h.get()));
         rdp_ptr r(new RDP(h.get()));
         m_cmap[conn] = conn_tuple(c, h, r);
         //r->Connect(host, user, string() /*domain*/, pass, params);
-        r->SetConnection(peer_tls, host, user, string() /*domain*/, pass, params);
+        r->SetConnection(peer, host, user, string() /*domain*/, pass, params);
         m_parent->RegisterRdpSession(r);
         return true;
     }

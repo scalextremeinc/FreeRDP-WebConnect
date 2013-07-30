@@ -49,13 +49,17 @@ namespace wsgate {
     
     rdpTls *RDPReverseServer::GetPeer(std::string key) {
         boost::unordered_map<std::string, rdpTls*>::iterator it;
+        rdpTls *peer = NULL;
         
         m_peers_map_mtx.lock();
         it = m_peers_map.find(key);
-        m_peers_map.erase(it);
+        if (m_peers_map.end() != it) {
+            m_peers_map.erase(it);
+            peer = it->second;
+        }
         m_peers_map_mtx.unlock();
         
-        return it->second;
+        return peer;
     }
     
     // private:
